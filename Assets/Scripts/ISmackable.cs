@@ -4,5 +4,5 @@ using UnityEngine;
 
 public interface ISmackable 
 {
-    
+    public void BeenHit();
 }

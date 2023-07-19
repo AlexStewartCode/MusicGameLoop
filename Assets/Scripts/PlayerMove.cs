@@ -8,11 +8,16 @@ public class PlayerMove : MonoBehaviour
     private int JumpCount; 
     [Range(0,10)] public float JumpForce;
     [Range(0,10)] public float Speed; 
+    [SerializeField] List<GameObject> Characters; 
+    private GameObject CurrentCharacter; 
+    ContactPoint2D [] tempCollisionIndicators;
+    
     // Start is called before the first frame update
     void Start()
     {
         JumpCount = 2; 
         Physics = GetComponent<Rigidbody2D>();
+        NewCharacterChosen(Characters[0]);
     }
 
     // Update is called once per frame
@@ -20,12 +25,13 @@ public class PlayerMove : MonoBehaviour
     {
         /*Get Velocity as a standalone vector
         makes it easier to edit without having to 
+        constantly set the rigidbody physics 
         */
         Vector2 CurrentVelocity = Physics.velocity;
         if(Input.GetKeyDown(KeyCode.W) && JumpCount > 0)
         {
             CurrentVelocity.y = JumpForce; 
-            JumpCount--; 
+            JumpCount--;
         }
 
         if(Input.GetKey(KeyCode.A))
@@ -35,7 +41,8 @@ public class PlayerMove : MonoBehaviour
 
         if(Input.GetKey(KeyCode.S))
         {
-            
+            //Implement ducking 
+            //1/2 height hitbox? 
         }
 
         if(Input.GetKey(KeyCode.D))
@@ -48,11 +55,41 @@ public class PlayerMove : MonoBehaviour
             JumpCount = 2;
         }
 
-        if(!Input.anyKey )
-        {
-            CurrentVelocity.x /= 1.01f;
-        }
-
         Physics.velocity = CurrentVelocity; 
+
+        if(Input.GetKeyDown(KeyCode.F))
+        {
+            CurrentCharacter.GetComponentInChildren<CharCont>().attack(); 
+        }
+    }
+    private void NewCharacterChosen(GameObject NewCharacter)
+    {
+        Destroy(CurrentCharacter);
+        CurrentCharacter = Instantiate (NewCharacter, this.transform);
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if(collision.gameObject.tag.Equals("Floor"))
+        {
+            tempCollisionIndicators = collision.contacts;
+            Debug.Log("HERE: " + collision.contacts.Length);
+            //reset jumpcount to max value 
+            JumpCount = 2; 
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if(tempCollisionIndicators != null && tempCollisionIndicators.Length > 0)
+        {
+            Vector2 mainpoint = tempCollisionIndicators[0].point; 
+            for(int i = 1; i < tempCollisionIndicators.Length; i++)
+            {
+                mainpoint += tempCollisionIndicators[i].point;
+            }
+            mainpoint /= tempCollisionIndicators.Length;
+            Gizmos.DrawWireSphere(mainpoint, 1);
+        }
     }
 }
