@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +11,7 @@ public class PlayerMove : MonoBehaviour
     [Range(0,10)] public float Speed; 
     [SerializeField] List<GameObject> Characters; 
     private GameObject CurrentCharacter; 
-    ContactPoint2D [] tempCollisionIndicators;
+    bool [] RightLeftCollide = {false, false}; 
     
     // Start is called before the first frame update
     void Start()
@@ -34,7 +35,7 @@ public class PlayerMove : MonoBehaviour
             JumpCount--;
         }
 
-        if(Input.GetKey(KeyCode.A))
+        if(Input.GetKey(KeyCode.A) && RightLeftCollide[0] == false)
         {
             CurrentVelocity.x = -Speed; 
         }
@@ -42,10 +43,10 @@ public class PlayerMove : MonoBehaviour
         if(Input.GetKey(KeyCode.S))
         {
             //Implement ducking 
-            //1/2 height hitbox? 
+            //1/2 height hitbox?
         }
 
-        if(Input.GetKey(KeyCode.D))
+        if(Input.GetKey(KeyCode.D) && RightLeftCollide[1] == false)
         {
             CurrentVelocity.x = Speed;
         }
@@ -68,28 +69,58 @@ public class PlayerMove : MonoBehaviour
         CurrentCharacter = Instantiate (NewCharacter, this.transform);
     }
 
+    const float CLOSE_ENGOUH = 0.001f;
+
+    /// <summary>
+    /// Checks with a margin for acceptable error defined by CLOSE_ENOUGH
+    /// </summary>
+    /// <param name="lhs"></param>
+    /// <param name="rhs"></param>
+    /// <returns></returns>
+    private bool ApproxEqual(Vector2 lhs, Vector2 rhs)
+    {
+        bool xCloseEnough = false;
+        bool yCloseEnough = false;
+        if(Mathf.Abs(lhs.x - rhs.x) < CLOSE_ENGOUH)
+        {
+            xCloseEnough = true;
+        }
+        if(Mathf.Abs(lhs.y - rhs.y) < CLOSE_ENGOUH)
+        {
+            yCloseEnough = true;
+        }
+
+        return xCloseEnough && yCloseEnough;
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.gameObject.tag.Equals("Floor"))
+        GameObject Collider = collision.gameObject; 
+        Vector2 CollisionDirection = collision.contacts[0].normal.normalized;
+        if(ApproxEqual(CollisionDirection, Vector2.up))
         {
-            tempCollisionIndicators = collision.contacts;
-            Debug.Log("HERE: " + collision.contacts.Length);
-            //reset jumpcount to max value 
-            JumpCount = 2; 
+            if(collision.gameObject.tag.Equals("Floor"))
+            {
+                JumpCount = 2; 
+            }
+        }
+        if(ApproxEqual(CollisionDirection, Vector2.down))
+        {
+            
+        }
+        if(ApproxEqual(CollisionDirection, Vector2.left))
+        {
+            RightLeftCollide[1] = true; 
+        }
+        if(ApproxEqual(CollisionDirection, Vector2.right))
+        {
+            RightLeftCollide[0] = true;
         }
     }
 
-    private void OnDrawGizmos()
+    private void OnCollisionExit2D()
     {
-        if(tempCollisionIndicators != null && tempCollisionIndicators.Length > 0)
-        {
-            Vector2 mainpoint = tempCollisionIndicators[0].point; 
-            for(int i = 1; i < tempCollisionIndicators.Length; i++)
-            {
-                mainpoint += tempCollisionIndicators[i].point;
-            }
-            mainpoint /= tempCollisionIndicators.Length;
-            Gizmos.DrawWireSphere(mainpoint, 1);
-        }
+        RightLeftCollide[0] = false;
+        RightLeftCollide[1] = false;
     }
 }
